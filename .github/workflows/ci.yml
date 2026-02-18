@@ -83,3 +83,48 @@ jobs:
 
       - name: Test
         run: npm test
+
+  publish:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'hwittenborn/rclone-ts'
+    needs:
+      - build
+      - lint
+      - format
+      - test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install rclone
+        run: curl https://rclone.org/install.sh | sudo bash
+
+      - name: Check if version is already published
+        id: version_check
+        run: |
+          CURRENT_VERSION="$(node -p "require('./package.json').version")"
+          PUBLISHED_VERSION="$(npm view @hwittenborn/rclone version || true)"
+
+          if [ "$CURRENT_VERSION" = "$PUBLISHED_VERSION" ]; then
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+            echo "Version $CURRENT_VERSION already exists on npm."
+          else
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+            echo "Will publish version $CURRENT_VERSION."
+          fi
+
+      - name: Publish package
+        if: steps.version_check.outputs.publish == 'true'
+        run: npm publish --access public
