@@ -1,4 +1,4 @@
-import { spawn, ChildProcess } from "child_process";
+import { spawn, spawnSync, ChildProcess } from "child_process";
 import { createInterface } from "readline";
 import * as crypto from "crypto";
 import { Transport, RcloneConfig } from "./transport";
@@ -20,6 +20,15 @@ import { Vfs } from "./apis/vfs";
 export interface RcloneOptions extends Partial<RcloneConfig> {
   execPath?: string;
   args?: string[];
+}
+
+export class RcloneBinaryNotFoundError extends Error {
+  constructor(execPath: string) {
+    super(
+      `rclone binary not found at "${execPath}". Install rclone or pass a valid execPath in Rclone options.`,
+    );
+    this.name = "RcloneBinaryNotFoundError";
+  }
 }
 
 export class Rclone {
@@ -76,6 +85,8 @@ export class Rclone {
       return;
     }
 
+    this.ensureRcloneInstalled();
+
     const user = `user_${crypto.randomBytes(4).toString("hex")}`;
     const pass = crypto.randomBytes(16).toString("hex");
 
@@ -123,6 +134,18 @@ export class Rclone {
 
       this.process.on("error", (err) => {
         if (!resolved) {
+          if ((err as NodeJS.ErrnoException).code === "ENOENT") {
+            reject(new RcloneBinaryNotFoundError(this.execPath));
+            return;
+          }
+
+          if ((err as NodeJS.ErrnoException).code === "EACCES") {
+            reject(
+              new Error(`Cannot execute rclone binary at "${this.execPath}" (permission denied).`),
+            );
+            return;
+          }
+
           reject(err);
         }
       });
@@ -134,6 +157,28 @@ export class Rclone {
         this.process = null;
       });
     });
+  }
+
+  private ensureRcloneInstalled(): void {
+    const check = spawnSync(this.execPath, ["version"], {
+      stdio: "ignore",
+      timeout: 5000,
+    });
+
+    if (check.error) {
+      const code = (check.error as NodeJS.ErrnoException).code;
+      if (code === "ENOENT") {
+        throw new RcloneBinaryNotFoundError(this.execPath);
+      }
+
+      if (code === "EACCES") {
+        throw new Error(`Cannot execute rclone binary at "${this.execPath}" (permission denied).`);
+      }
+
+      throw new Error(
+        `Failed to execute rclone binary at "${this.execPath}": ${check.error.message}`,
+      );
+    }
   }
 
   public stop(): void {
