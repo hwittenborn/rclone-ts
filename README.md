@@ -14,7 +14,7 @@ A TypeScript client for the [rclone](https://rclone.org/) Remote Control (RC) AP
 npm install @hwittenborn/rclone
 ```
 
-## Usage
+## Example Usage
 
 ```typescript
 import { Rclone } from '@hwittenborn/rclone';
@@ -35,7 +35,3 @@ async function main() {
 
 main();
 ```
-
-## License
-
-MIT
