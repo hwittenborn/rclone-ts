@@ -291,7 +291,21 @@ export class Operations {
     return OperationsStatSchema.parse(data);
   }
 
-  public async uploadfile(_fs: string, _remote: string, _fileData: unknown): Promise<void> {
-    throw new Error("operations/uploadfile not implemented: requires multipart/form-data support");
+  public async uploadfile(
+    fs: string,
+    remote: string,
+    body: unknown,
+    options?: { group?: string; contentType?: string },
+  ): Promise<void> {
+    const headers: Record<string, string> = {};
+    if (options?.contentType) {
+      headers["Content-Type"] = options.contentType;
+    }
+
+    await this.transport.postForm("operations/uploadfile", body, {
+      fs,
+      remote,
+      _group: options?.group,
+    }, headers);
   }
 }

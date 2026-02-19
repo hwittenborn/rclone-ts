@@ -83,7 +83,44 @@ export class Transport {
       headers,
       body: JSON.stringify(requestBody),
     });
+    return this.handleResponse<T>(response, requestBody, command);
+  }
 
+  public async postForm<T>(
+    command: string,
+    body: unknown,
+    query?: Record<string, string | number | boolean | undefined>,
+    extraHeaders?: Record<string, string>,
+  ): Promise<T> {
+    const requestQuery = query ?? {};
+    const queryString = new URLSearchParams(
+      Object.entries(requestQuery)
+        .filter(([, value]) => value !== undefined)
+        .map(([key, value]) => [key, String(value)]),
+    ).toString();
+    const url = `${this.config.url}/${command}${queryString ? `?${queryString}` : ""}`;
+    const headers: Record<string, string> = { ...(extraHeaders ?? {}) };
+
+    if (this.config.username && this.config.password) {
+      const auth = Buffer.from(`${this.config.username}:${this.config.password}`).toString(
+        "base64",
+      );
+      headers["Authorization"] = `Basic ${auth}`;
+    }
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers,
+      body: body as BodyInit,
+    });
+    return this.handleResponse<T>(response, requestQuery, command);
+  }
+
+  private async handleResponse<T>(
+    response: Response,
+    requestBody: unknown,
+    command: string,
+  ): Promise<T> {
     const contentType = response.headers.get("content-type");
     let data: unknown;
 

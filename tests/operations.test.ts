@@ -53,4 +53,23 @@ describe("Operations API", () => {
     // Check if Name is local or alias. Usually "local" if it unwraps.
     expect(info.Name).toBe("local");
   });
+
+  it("should uploadfile", async () => {
+    const boundary = "----rcloneTsOpsBoundary";
+    const multipartBody =
+      `--${boundary}\r\n` +
+      `Content-Disposition: form-data; name="file"; filename="uploaded.txt"\r\n` +
+      `Content-Type: text/plain\r\n\r\n` +
+      `hello from uploadfile\r\n` +
+      `--${boundary}--\r\n`;
+
+    await client.operations.uploadfile(remoteName + ":", "", Buffer.from(multipartBody, "utf8"), {
+      group: "test-upload-group",
+      contentType: `multipart/form-data; boundary=${boundary}`,
+    });
+
+    const stat = await client.operations.stat(remoteName + ":", "uploaded.txt");
+    expect(stat.item).not.toBeNull();
+    expect(stat.item?.Name).toBe("uploaded.txt");
+  });
 });

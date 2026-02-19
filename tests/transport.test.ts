@@ -212,4 +212,52 @@ describe("Transport", () => {
       server.close();
     }
   });
+
+  it("supports multipart posts with query params", async () => {
+    const server = http.createServer(async (req, res) => {
+      const chunks: Buffer[] = [];
+      for await (const chunk of req) {
+        chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+      }
+
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(
+        JSON.stringify({
+          path: req.url,
+          contentType: req.headers["content-type"] ?? null,
+          hasBody: Buffer.concat(chunks).length > 0,
+        }),
+      );
+    });
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", () => resolve()));
+    const address = server.address() as AddressInfo;
+    const transport = new Transport({ url: `http://127.0.0.1:${address.port}` });
+
+    try {
+      const boundary = "----rcloneTsBoundary";
+      const multipartBody =
+        `--${boundary}\r\n` +
+        `Content-Disposition: form-data; name="file"; filename="hello.txt"\r\n` +
+        `Content-Type: text/plain\r\n\r\n` +
+        `hello world\r\n` +
+        `--${boundary}--\r\n`;
+
+      const result = await transport.postForm<{
+        path: string;
+        contentType: string | null;
+        hasBody: boolean;
+      }>(
+        "operations/uploadfile",
+        Buffer.from(multipartBody, "utf8"),
+        { fs: "local:", remote: "", _group: "abc123" },
+        { "Content-Type": `multipart/form-data; boundary=${boundary}` },
+      );
+
+      expect(result.path).toBe("/operations/uploadfile?fs=local%3A&remote=&_group=abc123");
+      expect(result.contentType).toContain("multipart/form-data");
+      expect(result.hasBody).toBe(true);
+    } finally {
+      server.close();
+    }
+  });
 });
