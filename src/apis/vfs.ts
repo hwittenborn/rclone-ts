@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { Transport } from "../transport";
+import { JsonObjectSchema } from "../types";
 
 export const VfsListSchema = z.object({
   vfses: z.array(z.string()),
@@ -7,7 +8,7 @@ export const VfsListSchema = z.object({
 
 export type VfsListResponse = z.infer<typeof VfsListSchema>;
 
-export const VfsPollIntervalSchema = z.record(z.string(), z.any());
+export const VfsPollIntervalSchema = JsonObjectSchema;
 
 export type VfsPollIntervalResponse = z.infer<typeof VfsPollIntervalSchema>;
 
@@ -49,7 +50,7 @@ export const VfsStatsSchema = z.object({
     dirs: z.number(),
     files: z.number(),
   }),
-  opt: z.record(z.string(), z.any()),
+  opt: JsonObjectSchema,
 });
 
 export type VfsStatsResponse = z.infer<typeof VfsStatsSchema>;
@@ -78,7 +79,7 @@ export class Vfs {
     interval?: string,
     timeout?: string,
   ): Promise<VfsPollIntervalResponse> {
-    const params: Record<string, any> = { fs };
+    const params: Record<string, string | undefined> = { fs };
     if (interval) params.interval = interval;
     if (timeout) params.timeout = timeout;
     const data = await this.transport.post("vfs/poll-interval", params);
@@ -100,7 +101,7 @@ export class Vfs {
   }
 
   public async refresh(fs?: string, dirs?: string[], recursive?: boolean): Promise<void> {
-    const params: Record<string, any> = { fs, recursive };
+    const params: Record<string, string | boolean | undefined> = { fs, recursive };
     if (dirs) {
       dirs.forEach((d, i) => (params[`dir${i === 0 ? "" : i + 1}`] = d));
     }

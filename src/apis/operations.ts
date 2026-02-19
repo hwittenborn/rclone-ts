@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { Transport } from "../transport";
+import { JsonObjectSchema } from "../types";
 
 export const OperationsAboutSchema = z.object({
   free: z.number().optional(),
@@ -28,7 +29,7 @@ export type OperationsCheckResponse = z.infer<typeof OperationsCheckSchema>;
 export const OperationsFsInfoSchema = z.object({
   Features: z.record(z.string(), z.boolean()),
   Hashes: z.array(z.string()),
-  MetadataInfo: z.any().optional(),
+  MetadataInfo: JsonObjectSchema.nullable().optional(),
   Name: z.string(),
   Precision: z.number(),
   Root: z.string().optional(),
@@ -290,7 +291,7 @@ export class Operations {
     return OperationsStatSchema.parse(data);
   }
 
-  public async uploadfile(_fs: string, _remote: string, _fileData: any): Promise<void> {
+  public async uploadfile(_fs: string, _remote: string, _fileData: unknown): Promise<void> {
     throw new Error("operations/uploadfile not implemented: requires multipart/form-data support");
   }
 }

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { Transport } from "../transport";
+import { JsonObjectSchema, JsonObject } from "../types";
 
 export const OptionsBlocksSchema = z.object({
   options: z.array(z.string()),
@@ -7,17 +8,17 @@ export const OptionsBlocksSchema = z.object({
 
 export type OptionsBlocksResponse = z.infer<typeof OptionsBlocksSchema>;
 
-export const OptionsGetSchema = z.record(z.string(), z.record(z.string(), z.any()));
+export const OptionsGetSchema = z.record(z.string(), JsonObjectSchema);
 
 export type OptionsGetResponse = z.infer<typeof OptionsGetSchema>;
 
-export const OptionsInfoSchema = z.record(z.string(), z.array(z.record(z.string(), z.any())));
+export const OptionsInfoSchema = z.record(z.string(), z.array(JsonObjectSchema));
 
 export type OptionsInfoResponse = z.infer<typeof OptionsInfoSchema>;
 
 export const OptionsLocalSchema = z.object({
-  config: z.record(z.string(), z.any()),
-  filter: z.record(z.string(), z.any()),
+  config: JsonObjectSchema,
+  filter: JsonObjectSchema,
 });
 
 export type OptionsLocalResponse = z.infer<typeof OptionsLocalSchema>;
@@ -45,7 +46,7 @@ export class Options {
     return OptionsLocalSchema.parse(data);
   }
 
-  public async set(options: Record<string, Record<string, any>>): Promise<void> {
+  public async set(options: Record<string, JsonObject>): Promise<void> {
     await this.transport.post("options/set", options);
   }
 }

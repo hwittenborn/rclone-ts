@@ -3,6 +3,7 @@ import { createInterface } from "readline";
 import * as crypto from "crypto";
 import { Transport, RcloneConfig } from "./transport";
 import { Core } from "./apis/core";
+import { Cache } from "./apis/cache";
 import { Config } from "./apis/config";
 import { Operations } from "./apis/operations";
 import { Options } from "./apis/options";
@@ -38,6 +39,7 @@ export class Rclone {
   private args: string[];
 
   public core: Core;
+  public cache: Cache;
   public config: Config;
   public operations: Operations;
   public options: Options;
@@ -65,6 +67,7 @@ export class Rclone {
     this.transport = new Transport(initialConfig);
 
     this.core = new Core(this.transport);
+    this.cache = new Cache(this.transport);
     this.config = new Config(this.transport);
     this.operations = new Operations(this.transport);
     this.options = new Options(this.transport);

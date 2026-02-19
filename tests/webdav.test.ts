@@ -1,5 +1,6 @@
 import { RcloneTestHelper } from "./helpers";
 import { Rclone } from "@/client";
+import { RcloneError } from "@/transport";
 import * as path from "path";
 import * as fs from "fs";
 
@@ -122,10 +123,11 @@ describe("WebDAV Remote Integration", () => {
     try {
       const about = await client.operations.about(remoteName + ":");
       expect(about).toBeDefined();
-    } catch (e: any) {
+    } catch (e: unknown) {
+      const error = e as RcloneError;
       // If strictly not supported, rclone might throw error "About feature not found"
       // We can accept that result too, but ideally rclone serve supports it.
-      console.log("About not supported:", e.message);
+      console.log("About not supported:", error.message);
     }
   });
 });

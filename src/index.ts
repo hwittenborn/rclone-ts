@@ -1,7 +1,9 @@
 export * from "./client";
 export * from "./transport";
+export * from "./types";
 
 export * from "./apis/core";
+export * from "./apis/cache";
 export * from "./apis/config";
 export * from "./apis/operations";
 export * from "./apis/options";

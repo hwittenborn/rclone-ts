@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { Transport } from "../transport";
+import { JsonObject } from "../types";
 
 export const MountListMountsSchema = z.object({
   mountPoints: z.array(z.string()),
@@ -25,8 +26,8 @@ export class Mount {
     fs: string,
     mountPoint: string,
     mountType?: string,
-    mountOpt?: Record<string, any>,
-    vfsOpt?: Record<string, any>,
+    mountOpt?: JsonObject,
+    vfsOpt?: JsonObject,
   ): Promise<void> {
     await this.transport.post("mount/mount", { fs, mountPoint, mountType, mountOpt, vfsOpt });
   }

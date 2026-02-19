@@ -1,5 +1,6 @@
 import fetch from "cross-fetch";
 import { z } from "zod";
+import { JsonObject } from "./types";
 
 export interface RcloneConfig {
   url: string;
@@ -7,19 +8,19 @@ export interface RcloneConfig {
   password?: string;
 }
 
-export interface RcloneErrorResponse {
+export interface RcloneErrorResponse<TInput = unknown> {
   error: string;
-  input: unknown;
+  input: TInput;
   status: number;
   path: string;
 }
 
-export class RcloneError extends Error {
+export class RcloneError<TInput = unknown> extends Error {
   public status: number;
   public path: string;
-  public input: unknown;
+  public input: TInput;
 
-  constructor(response: RcloneErrorResponse) {
+  constructor(response: RcloneErrorResponse<TInput>) {
     super(response.error);
     this.name = "RcloneError";
     this.status = response.status;
@@ -28,9 +29,22 @@ export class RcloneError extends Error {
   }
 }
 
-const RcloneErrorSchema = z.object({
+const RcloneErrorSchema = z
+  .object({
+    error: z.string(),
+    input: z.unknown().optional(),
+    status: z.number().optional(),
+    path: z.string().optional(),
+  })
+  .passthrough();
+
+const TransportErrorMessageSchema = z.object({
+  message: z.string(),
+});
+
+const RcloneErrorResponseSchema = z.object({
   error: z.string(),
-  input: z.unknown().optional().default({}),
+  input: z.unknown(),
   status: z.number(),
   path: z.string(),
 });
@@ -50,7 +64,8 @@ export class Transport {
     return this.config;
   }
 
-  public async post<T>(command: string, params: any = {}): Promise<T> {
+  public async post<T, TParams = JsonObject>(command: string, params?: TParams): Promise<T> {
+    const requestBody = (params ?? {}) as TParams;
     const url = `${this.config.url}/${command}`;
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
@@ -66,11 +81,11 @@ export class Transport {
     const response = await fetch(url, {
       method: "POST",
       headers,
-      body: JSON.stringify(params),
+      body: JSON.stringify(requestBody),
     });
 
     const contentType = response.headers.get("content-type");
-    let data: any;
+    let data: unknown;
 
     if (contentType && contentType.includes("application/json")) {
       data = await response.json();
@@ -85,10 +100,23 @@ export class Transport {
 
     if (!response.ok) {
       const parsedError = RcloneErrorSchema.safeParse(data);
-      if (parsedError.success) {
-        throw new RcloneError(parsedError.data);
-      }
-      throw new Error(`Rclone RC error: ${response.status} ${response.statusText}`);
+      const errorMessage =
+        parsedError.success && parsedError.data.error
+          ? parsedError.data.error
+          : TransportErrorMessageSchema.safeParse(data).success
+            ? TransportErrorMessageSchema.parse(data).message
+            : `Rclone RC error: ${response.status} ${response.statusText}`;
+
+      const normalizedError = RcloneErrorResponseSchema.parse({
+        error: errorMessage,
+        input: parsedError.success ? (parsedError.data.input ?? requestBody) : requestBody,
+        status: parsedError.success
+          ? (parsedError.data.status ?? response.status)
+          : response.status,
+        path: parsedError.success ? (parsedError.data.path ?? command) : command,
+      });
+
+      throw new RcloneError(normalizedError);
     }
 
     return data as T;

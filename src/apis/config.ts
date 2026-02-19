@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { Transport } from "../transport";
+import { JsonObjectSchema, JsonValueSchema, JsonObject } from "../types";
 
 export const ConfigPathsSchema = z.object({
   cache: z.string(),
@@ -15,11 +16,11 @@ export const ConfigListRemotesSchema = z.object({
 
 export type ConfigListRemotesResponse = z.infer<typeof ConfigListRemotesSchema>;
 
-export const ConfigGetSchema = z.record(z.string(), z.any());
+export const ConfigGetSchema = JsonObjectSchema;
 
 export type ConfigGetResponse = z.infer<typeof ConfigGetSchema>;
 
-export const ConfigDumpSchema = z.record(z.string(), z.record(z.string(), z.any()));
+export const ConfigDumpSchema = z.record(z.string(), JsonObjectSchema);
 
 export type ConfigDumpResponse = z.infer<typeof ConfigDumpSchema>;
 
@@ -28,7 +29,7 @@ const ConfigOptionSchema = z
     Name: z.string(),
     Type: z.string(),
     Help: z.string(),
-    Default: z.any().optional(),
+    Default: JsonValueSchema.optional(),
     Advanced: z.boolean().optional(),
     Required: z.boolean().optional(),
     IsPassword: z.boolean().optional(),
@@ -43,7 +44,7 @@ const ConfigProviderSchema = z
     Description: z.string(),
     Prefix: z.string(),
     Options: z.array(ConfigOptionSchema).optional(),
-    CommandHelp: z.array(z.any()).optional(),
+    CommandHelp: z.array(JsonObjectSchema).optional(),
     Aliases: z.array(z.string()).nullable().optional(),
     Hide: z.boolean().optional(),
   })
@@ -61,7 +62,7 @@ export class Config {
   public async create(
     name: string,
     type: string,
-    parameters: Record<string, any>,
+    parameters: JsonObject,
     opt?: {
       obscure?: boolean;
       noObscure?: boolean;
@@ -91,7 +92,7 @@ export class Config {
     return ConfigListRemotesSchema.parse(data);
   }
 
-  public async password(name: string, parameters: Record<string, any>): Promise<void> {
+  public async password(name: string, parameters: JsonObject): Promise<void> {
     await this.transport.post("config/password", { name, parameters });
   }
 
@@ -115,7 +116,7 @@ export class Config {
 
   public async update(
     name: string,
-    parameters: Record<string, any>,
+    parameters: JsonObject,
     opt?: {
       obscure?: boolean;
       noObscure?: boolean;

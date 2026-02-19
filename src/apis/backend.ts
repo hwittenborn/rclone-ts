@@ -1,8 +1,9 @@
 import { z } from "zod";
 import { Transport } from "../transport";
+import { JsonValueSchema } from "../types";
 
 export const BackendCommandSchema = z.object({
-  result: z.any().optional(),
+  result: JsonValueSchema.optional(),
 });
 
 export type BackendCommandResponse = z.infer<typeof BackendCommandSchema>;

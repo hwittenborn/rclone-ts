@@ -33,11 +33,12 @@ describe("RC API", () => {
 
     try {
       await client.rc.error();
-    } catch (e: any) {
-      expect(e).toBeInstanceOf(RcloneError);
+    } catch (e: unknown) {
+      const error = e as RcloneError;
+      expect(error).toBeInstanceOf(RcloneError);
       // Verify structure of the error if possible, though Transport wraps it
-      expect(e.status).toBe(500);
-      expect(e.path).toBe("rc/error");
+      expect(error.status).toBe(500);
+      expect(error.path).toBe("rc/error");
     }
   });
 });

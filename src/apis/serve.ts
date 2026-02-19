@@ -1,12 +1,13 @@
 import { z } from "zod";
 import { Transport } from "../transport";
+import { JsonObjectSchema, JsonObject } from "../types";
 
 export const ServeListSchema = z.object({
   list: z.array(
     z.object({
       id: z.string(),
       addr: z.string(),
-      params: z.record(z.string(), z.any()),
+      params: JsonObjectSchema,
     }),
   ),
 });
@@ -38,7 +39,7 @@ export class Serve {
     type: string,
     fs: string,
     addr?: string,
-    options?: Record<string, any>,
+    options?: JsonObject,
   ): Promise<ServeStartResponse> {
     const data = await this.transport.post("serve/start", { type, fs, addr, ...options });
     return ServeStartSchema.parse(data);
