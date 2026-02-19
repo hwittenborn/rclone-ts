@@ -302,10 +302,15 @@ export class Operations {
       headers["Content-Type"] = options.contentType;
     }
 
-    await this.transport.postForm("operations/uploadfile", body, {
-      fs,
-      remote,
-      _group: options?.group,
-    }, headers);
+    await this.transport.postForm(
+      "operations/uploadfile",
+      body,
+      {
+        fs,
+        remote,
+        _group: options?.group,
+      },
+      headers,
+    );
   }
 }
